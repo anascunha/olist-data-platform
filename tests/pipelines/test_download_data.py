@@ -5,8 +5,7 @@ Strategy: mock KaggleApi and os.makedirs so tests run with no
 credentials and without touching the filesystem or network.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 
 # ---------------------------------------------------------------------------
