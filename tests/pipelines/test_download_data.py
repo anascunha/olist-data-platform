@@ -7,12 +7,9 @@ credentials and without touching the filesystem or network.
 
 from unittest.mock import MagicMock, patch
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-MODULE = "pipelines.download_data"
 
 
 def _run(download_path="data/raw"):
@@ -29,8 +26,8 @@ def _run(download_path="data/raw"):
 
 
 class TestDownloadOlistDatasetSuccess:
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_creates_download_directory(self, mock_makedirs, mock_api_cls):
         mock_api_cls.return_value.authenticate.return_value = None
         mock_api_cls.return_value.dataset_download_files.return_value = None
@@ -39,8 +36,8 @@ class TestDownloadOlistDatasetSuccess:
 
         mock_makedirs.assert_called_once_with("data/raw", exist_ok=True)
 
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_authenticates_kaggle_api(self, mock_makedirs, mock_api_cls):
         mock_instance = MagicMock()
         mock_api_cls.return_value = mock_instance
@@ -49,8 +46,8 @@ class TestDownloadOlistDatasetSuccess:
 
         mock_instance.authenticate.assert_called_once()
 
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_downloads_correct_dataset(self, mock_makedirs, mock_api_cls):
         mock_instance = MagicMock()
         mock_api_cls.return_value = mock_instance
@@ -63,8 +60,8 @@ class TestDownloadOlistDatasetSuccess:
             unzip=True,
         )
 
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_custom_download_path_is_used(self, mock_makedirs, mock_api_cls):
         mock_instance = MagicMock()
         mock_api_cls.return_value = mock_instance
@@ -78,8 +75,8 @@ class TestDownloadOlistDatasetSuccess:
             unzip=True,
         )
 
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_success_prints_confirmation(self, mock_makedirs, mock_api_cls, capsys):
         mock_api_cls.return_value = MagicMock()
 
@@ -95,8 +92,8 @@ class TestDownloadOlistDatasetSuccess:
 
 
 class TestDownloadOlistDatasetErrors:
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_authentication_error_is_caught(self, mock_makedirs, mock_api_cls, capsys):
         mock_api_cls.return_value.authenticate.side_effect = Exception("auth failed")
 
@@ -106,8 +103,8 @@ class TestDownloadOlistDatasetErrors:
         captured = capsys.readouterr()
         assert "Erro ao baixar o dataset" in captured.out
 
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_download_error_is_caught(self, mock_makedirs, mock_api_cls, capsys):
         mock_instance = MagicMock()
         mock_instance.dataset_download_files.side_effect = Exception("network error")
@@ -118,8 +115,8 @@ class TestDownloadOlistDatasetErrors:
         captured = capsys.readouterr()
         assert "Erro ao baixar o dataset" in captured.out
 
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_error_message_contains_exception_detail(
         self, mock_makedirs, mock_api_cls, capsys
     ):
@@ -130,8 +127,8 @@ class TestDownloadOlistDatasetErrors:
         captured = capsys.readouterr()
         assert "missing key" in captured.out
 
-    @patch(f"{MODULE}.KaggleApi")
-    @patch(f"{MODULE}.os.makedirs")
+    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
+    @patch("pipelines.download_data.os.makedirs")
     def test_makedirs_called_before_api_on_error(self, mock_makedirs, mock_api_cls):
         """Directory must be created even when the API call fails."""
         mock_api_cls.return_value.authenticate.side_effect = Exception("fail")
