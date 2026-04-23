@@ -1,5 +1,4 @@
 import os
-from kaggle.api.kaggle_api_extended import KaggleApi
 
 
 def download_olist_dataset(download_path="data/raw"):
@@ -7,6 +6,8 @@ def download_olist_dataset(download_path="data/raw"):
     Downloads the Olist dataset from Kaggle to the specified path.
     Requires KAGGLE_USERNAME and KAGGLE_KEY environment variables to be set.
     """
+    from kaggle.api.kaggle_api_extended import KaggleApi
+
     os.makedirs(download_path, exist_ok=True)
 
     try:
