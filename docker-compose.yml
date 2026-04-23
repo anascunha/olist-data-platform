@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  data_platform:
+    build: .
+    container_name: olist_data_platform
+    volumes:
+      - .:/app
+    environment:
+      - KAGGLE_USERNAME=${KAGGLE_USERNAME}
+      - KAGGLE_KEY=${KAGGLE_KEY}
+    ports:
+      - "8501:8501" # Porta para o Streamlit (Fase 5)
+    tty: true

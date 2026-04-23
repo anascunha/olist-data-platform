@@ -1,0 +1,11 @@
+dbt-core
+dbt-databricks
+kaggle
+streamlit
+langchain
+langchain-groq
+pyspark
+delta-spark
+python-dotenv
+pytest
+pytest-mock

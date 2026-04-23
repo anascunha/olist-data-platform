@@ -31,3 +31,30 @@ Para eliminar a barreira técnica entre os dados e os tomadores de decisão, int
 ├── pipelines/           # Scripts de ingestão e processamento Spark
 ├── transform/           # Projeto dbt (Models, Macros, Snapshots)
 └── ml_ops/              # Implementação do Agente de IA e integração LLM
+```
+
+## 🚀 Como Começar (Quick Start)
+
+Este projeto utiliza **Docker** e um **Makefile** para simplificar a configuração do ambiente local.
+
+### 1. Clonar e Preparar
+```bash
+git clone https://github.com/<seu-usuario>/olist-data-platform.git
+cd olist-data-platform
+cp .env.example .env
+```
+*(Preencha as credenciais no arquivo `.env` seguindo a documentação)*
+
+### 2. Subir o Ambiente
+```bash
+make setup   # Constrói a imagem Docker base (Python 3.11, dbt, PySpark)
+make up      # Inicia o contêiner de desenvolvimento
+make shell   # Abre um terminal dentro do ambiente isolado
+```
+
+## 📚 Documentação Técnica
+
+Para o passo a passo completo sobre como configurar as nuvens gratuitas (Azure e Databricks) e provisionar a infraestrutura, consulte os guias na pasta `docs/`:
+
+* 📖 [Fase 1 — Infraestrutura e Configuração do Ambiente](./docs/phase-01-infrastructure.md)
+* *(Mais fases em breve...)*
