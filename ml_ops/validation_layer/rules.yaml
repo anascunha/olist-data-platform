@@ -1,0 +1,7 @@
+rules:
+  - no_select_star: true
+  - require_where: true
+  - allowed_tables:
+      - orders
+      - customers
+  - require_documentation_match: true
