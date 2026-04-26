@@ -1,16 +1,14 @@
-.PHONY: setup up down shell download-data
+.PHONY: setup ingest lint test
 
 setup:
-	docker-compose build
+	python3 -m venv .venv
+	.venv/bin/pip install -r requirements.txt
 
-up:
-	docker-compose up -d
+ingest:
+	.venv/bin/python pipelines/download_data.py
 
-down:
-	docker-compose down
+lint:
+	.venv/bin/ruff check .
 
-shell:
-	docker-compose exec data_platform bash
-
-download-data:
-	docker-compose exec data_platform python pipelines/download_data.py
+test:
+	.venv/bin/pytest
