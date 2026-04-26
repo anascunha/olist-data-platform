@@ -4,4 +4,11 @@ rules:
   - allowed_tables:
       - orders
       - customers
+      - geolocation
+      - order_items
+      - order_payments
+      - order_reviews
+      - products
+      - sellers
+      - product_category_name_translation
   - require_documentation_match: true
