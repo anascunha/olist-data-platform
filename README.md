@@ -46,21 +46,21 @@ This layer enforces:
 
 ## 🚀 Como Começar (Quick Start)
 
-Este projeto utiliza **Docker** e um **Makefile** para simplificar a configuração do ambiente local.
+Este projeto utiliza um **Ambiente Virtual Python (venv)** para execução local.
 
 ### 1. Clonar e Preparar
 ```bash
-git clone https://github.com/<seu-usuario>/olist-data-platform.git
+git clone https://github.com/anascunha/olist-data-platform.git
 cd olist-data-platform
 cp .env.example .env
 ```
 *(Preencha as credenciais no arquivo `.env` seguindo a documentação)*
 
-### 2. Subir o Ambiente
+### 2. Configurar o Ambiente Local
 ```bash
-make setup   # Constrói a imagem Docker base (Python 3.11, dbt, PySpark)
-make up      # Inicia o contêiner de desenvolvimento
-make shell   # Abre um terminal dentro do ambiente isolado
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## 📚 Documentação Técnica
