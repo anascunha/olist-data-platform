@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: >
+      Dimensão de clientes do marketplace no grão do cliente final (customer_unique_id),
+      com localização do pedido mais recente e indicação de presença no CRM.
+    config:
+      meta:
+        graining: customer_unique_id
+        contains_pii: false
+        access_type: private
+        load_frequency: on demand
+    columns:
+      - name: customer_sk
+        description: Surrogate key da dimensão, gerada via hash do customer_unique_id.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_unique_id
+        description: '{{ doc("customer_unique_id") }}'
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_city
+        description: Cidade do pedido mais recente.
+
+      - name: customer_state
+        description: UF do pedido mais recente.
+        data_tests:
+          - not_null
+
+      - name: first_purchase_at
+        description: Primeiro pedido (de qualquer status).
+
+      - name: last_purchase_at
+        description: Último pedido (de qualquer status).
+
+      - name: is_in_crm
+        description: True quando o cliente existe como contato no CRM.
+        data_tests:
+          - not_null
+
+      - name: contact_id
+        description: Contato do CRM ligado ao cliente.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_crm_contact')
+                field: contact_id

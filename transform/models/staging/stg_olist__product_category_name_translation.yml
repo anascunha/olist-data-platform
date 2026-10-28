@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_olist__product_category_name_translation
+    description: >
+      Modelo de staging da tradução das categorias de produto (português para inglês). A
+      granularidade é por categoria.
+    config:
+      meta:
+        graining: product_category
+        contains_pii: false
+        source_system: Olist (Kaggle)
+        ingestion_type: full load
+        load_frequency: on demand
+    columns:
+      - name: product_category_name
+        description: >
+          Categoria em português (Chave Primária).
+        data_tests:
+          - unique
+          - not_null
+
+      - name: product_category_name_english
+        description: >
+          Categoria em inglês.
+        data_tests:
+          - not_null
+
+      - name: _ingestion_timestamp
+        description: '{{ doc("_ingestion_timestamp") }}'
+
+      - name: _source_schema
+        description: '{{ doc("_source_schema") }}'
+
+      - name: _source_table
+        description: '{{ doc("_source_table") }}'
+
+      - name: _source_database
+        description: '{{ doc("_source_database") }}'
+
+      - name: _storage_type
+        description: '{{ doc("_storage_type") }}'
