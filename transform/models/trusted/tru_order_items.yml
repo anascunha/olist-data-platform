@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: tru_order_items
+    description: >
+      Modelo trusted de itens de pedido enriquecidos com a categoria do produto em português
+      e inglês. A granularidade é por item de pedido.
+    config:
+      meta:
+        graining: order_item
+        contains_pii: false
+        load_frequency: on demand
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - order_id
+              - order_item_id
+    columns:
+      - name: order_id
+        description: Identificador do pedido.
+        data_tests:
+          - not_null
+
+      - name: order_item_id
+        description: Número sequencial do item no pedido.
+
+      - name: product_id
+        description: Identificador do produto.
+
+      - name: seller_id
+        description: Identificador do vendedor.
+
+      - name: product_category_name
+        description: Categoria em português. 'not registered' quando ausente.
+        data_tests:
+          - not_null
+
+      - name: product_category_name_english
+        description: >
+          Categoria em inglês. Usa o nome em português quando não há tradução e
+          'not registered' quando o produto não tem categoria.
+        data_tests:
+          - not_null
+
+      - name: item_price
+        description: Preço do item em BRL.
+
+      - name: freight_value
+        description: Frete do item em BRL.
