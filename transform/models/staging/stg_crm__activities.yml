@@ -1,0 +1,82 @@
+version: 2
+
+models:
+  - name: stg_crm__activities
+    description: >
+      Modelo de staging das atividades (interações) registradas no CRM. A granularidade é por
+      atividade.
+    config:
+      meta:
+        graining: activity
+        contains_pii: false
+        source_system: CRM fictício
+        ingestion_type: full load
+        load_frequency: on demand
+    columns:
+      - name: activity_id
+        description: >
+          Identificador único da atividade (Chave Primária).
+        data_tests:
+          - unique
+          - not_null
+
+      - name: contact_id
+        description: >
+          Contato relacionado.
+        data_tests:
+          - not_null
+
+      - name: owner_id
+        description: >
+          Responsável pela atividade (Chave Estrangeira).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_crm__owners')
+                field: owner_id
+
+      - name: activity_type
+        description: >
+          Tipo de interação.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['email', 'call', 'whatsapp', 'meeting', 'note']
+
+      - name: activity_direction
+        description: >
+          Direção da interação (inbound ou outbound).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['inbound', 'outbound']
+
+      - name: activity_at
+        description: >
+          Data e hora da interação.
+        data_tests:
+          - not_null
+
+      - name: activity_outcome
+        description: >
+          Resultado da interação.
+
+      - name: duration_minutes
+        description: >
+          Duração em minutos (apenas ligações e reuniões).
+
+      - name: _ingestion_timestamp
+        description: '{{ doc("_ingestion_timestamp") }}'
+
+      - name: _source_schema
+        description: '{{ doc("_source_schema") }}'
+
+      - name: _source_table
+        description: '{{ doc("_source_table") }}'
+
+      - name: _source_database
+        description: '{{ doc("_source_database") }}'
+
+      - name: _storage_type
+        description: '{{ doc("_storage_type") }}'

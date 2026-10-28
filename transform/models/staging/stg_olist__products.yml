@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: stg_olist__products
+    description: >
+      Modelo de staging dos produtos do Olist. Corrige os nomes de colunas com erro de
+      digitação da origem (lenght para length). A granularidade é por produto (product_id).
+    config:
+      meta:
+        graining: product
+        contains_pii: false
+        source_system: Olist (Kaggle)
+        ingestion_type: full load
+        load_frequency: on demand
+    columns:
+      - name: product_id
+        description: >
+          Identificador único do produto (Chave Primária).
+        data_tests:
+          - unique
+          - not_null
+
+      - name: product_category_name
+        description: >
+          Categoria do produto em português. Nula quando não informada.
+
+      - name: product_name_length
+        description: >
+          Quantidade de caracteres do nome do produto.
+
+      - name: product_description_length
+        description: >
+          Quantidade de caracteres da descrição do produto.
+
+      - name: product_photos_qty
+        description: >
+          Quantidade de fotos publicadas.
+
+      - name: product_weight_g
+        description: >
+          Peso do produto em gramas.
+
+      - name: product_length_cm
+        description: >
+          Comprimento do produto em centímetros.
+
+      - name: product_height_cm
+        description: >
+          Altura do produto em centímetros.
+
+      - name: product_width_cm
+        description: >
+          Largura do produto em centímetros.
+
+      - name: _ingestion_timestamp
+        description: '{{ doc("_ingestion_timestamp") }}'
+
+      - name: _source_schema
+        description: '{{ doc("_source_schema") }}'
+
+      - name: _source_table
+        description: '{{ doc("_source_table") }}'
+
+      - name: _source_database
+        description: '{{ doc("_source_database") }}'
+
+      - name: _storage_type
+        description: '{{ doc("_storage_type") }}'

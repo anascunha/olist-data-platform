@@ -1,0 +1,130 @@
+version: 2
+
+models:
+  - name: agg_crm_contact_purchases
+    description: '{{ doc("agg_crm_contact_purchases") }}'
+    config:
+      meta:
+        graining: contact
+        contains_pii: true
+        access_type: private
+        load_frequency: on demand
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "orders_after_crm_entry <= total_orders"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "revenue_after_crm_entry <= total_revenue"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "(total_orders = 0) = (buyer_segment = 'never_bought')"
+    columns:
+      - name: contact_sk
+        description: Chave da dim_crm_contact.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_crm_contact')
+                field: contact_sk
+
+      - name: contact_id
+        description: Chave natural do contato.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_unique_id
+        description: Cliente do Olist ligado ao contato.
+
+      - name: full_name
+        description: Nome completo do contato.
+
+      - name: contact_state
+        description: UF do contato.
+
+      - name: lifecycle_stage
+        description: '{{ doc("lifecycle_stage") }}'
+
+      - name: lead_source
+        description: Origem do contato.
+
+      - name: campaign_name
+        description: Campanha de origem.
+
+      - name: owner_name
+        description: Responsável pelo contato.
+
+      - name: owner_team
+        description: Time do responsável.
+
+      - name: contact_created_at
+        description: Criação do contato no CRM.
+
+      - name: activities_count
+        description: Atividades registradas no CRM.
+
+      - name: is_marketplace_buyer
+        description: True quando o contato tem ao menos um pedido válido no Olist.
+        data_tests:
+          - not_null
+
+      - name: buyer_segment
+        description: never_bought, one_time_buyer ou repeat_buyer.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['never_bought', 'one_time_buyer', 'repeat_buyer']
+
+      - name: total_orders
+        description: Quantidade de pedidos válidos.
+        data_tests:
+          - not_null
+
+      - name: total_revenue
+        description: Receita dos pedidos válidos em BRL (produtos + frete).
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+
+      - name: avg_ticket
+        description: Ticket médio em BRL. Nulo para quem nunca comprou.
+
+      - name: first_order_at
+        description: Primeiro pedido válido.
+
+      - name: last_order_at
+        description: Último pedido válido.
+
+      - name: customer_lifetime_days
+        description: Dias entre o primeiro e o último pedido válido.
+
+      - name: avg_days_between_orders
+        description: Intervalo médio em dias entre pedidos. Apenas para recompradores.
+
+      - name: recency_days
+        description: Dias desde o último pedido, contados até o último pedido do dataset.
+
+      - name: days_from_crm_entry_to_first_order
+        description: >
+          Dias entre a criação do contato e o primeiro pedido. Negativo quando o cliente já
+          comprava antes de entrar no CRM.
+
+      - name: orders_after_crm_entry
+        description: Pedidos válidos feitos após a criação do contato.
+
+      - name: revenue_after_crm_entry
+        description: Receita dos pedidos feitos após a criação do contato.
+
+      - name: favorite_category
+        description: Categoria (em inglês) com maior gasto do contato.
+
+      - name: is_stage_outdated
+        description: True quando o contato compra mas está como lead, mql ou opportunity no CRM.
+        data_tests:
+          - not_null
