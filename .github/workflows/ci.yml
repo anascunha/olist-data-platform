@@ -39,8 +39,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up Java (PySpark)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Install dependencies
-        run: pip install pytest pytest-mock kaggle
+        run: pip install pytest pytest-mock kaggle pyyaml python-dotenv pyspark==3.5.3
 
       - name: Run unit tests
         run: pytest --tb=short -v

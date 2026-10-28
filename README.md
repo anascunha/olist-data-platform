@@ -8,12 +8,12 @@ O grande diferencial deste projeto é a **Estratégia Zero-Budget**: toda a infr
 ## 🏗️ Arquitetura de Dados (Medallion)
 A plataforma adota a **Arquitetura Medalhão** para garantir governança, qualidade e rastreabilidade:
 
-* **Bronze (Raw):** Ingestão de dados brutos em formato Parquet/Delta armazenados no **Databricks File System (DBFS)**.
+* **Bronze (Raw):** CSVs do Kaggle enviados a um **Volume do Unity Catalog** e convertidos em tabelas Delta gerenciadas (`raw.source_olist.*`) por um notebook **PySpark**.
 * **Silver (Trusted):** Limpeza, padronização e deduplicação utilizando **PySpark** no **Databricks**.
 * **Gold (Curated):** Modelagem dimensional (**Star Schema/Kimball**) via **dbt Core**, otimizada para consumo analítico e IA.
 
 ## 🛠️ Stack Tecnológica
-* **Processamento & Data Lake:** [Databricks Community Edition](https://community.cloud.databricks.com/) (Spark, DBFS & Delta Lake).
+* **Processamento & Data Lake:** [Databricks Free Edition](https://www.databricks.com/learn/free-edition) (Spark, Delta Lake & Unity Catalog).
 * **Engenharia Analítica:** [dbt Core](https://www.getdbt.com/) para transformações modulares e governança.
 * **Inteligência Artificial:** Agente **NL2SQL** utilizando Llama 3 via **Groq API** para consultas em linguagem natural.
 * **CI/CD:** **GitHub Actions** para automação de testes de qualidade e linting de SQL.
@@ -68,4 +68,5 @@ pip install -r requirements.txt
 Para o passo a passo completo sobre como configurar o Databricks Community Edition e provisionar o projeto, consulte os guias na pasta `docs/`:
 
 * 📖 [Fase 1 — Infraestrutura e Configuração do Ambiente](./docs/phase-01-infrastructure.md)
+* 📖 [Fase 2 — Pipeline de Ingestão (Bronze)](./docs/phase-02-ingestion.md)
 * *(Mais fases em breve...)*
