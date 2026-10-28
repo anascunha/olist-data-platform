@@ -5,7 +5,7 @@ setup:
 	.venv/bin/pip install -r requirements.txt
 
 ingest:
-	.venv/bin/python pipelines/download_data.py
+	.venv/bin/python -m pipelines.download_data
 
 lint:
 	.venv/bin/ruff check .

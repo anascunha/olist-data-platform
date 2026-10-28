@@ -1,72 +1,102 @@
 # Fase 2 — Pipeline de Ingestão (Bronze Layer)
 
-Este documento detalha o funcionamento do pipeline de ingestão de dados desenvolvido nesta fase. Nosso objetivo é buscar o dataset completo da Olist no Kaggle e carregá-lo de forma automatizada na nossa arquitetura de Data Lake (DBFS), estabelecendo a fundação da **Camada Bronze**.
+Este documento detalha o pipeline de ingestão desta fase. O objetivo é buscar o dataset completo da Olist no Kaggle e carregá-lo de forma automatizada no **Unity Catalog** do Databricks, estabelecendo a fundação da **Camada Bronze**.
+
+A organização segue o mesmo padrão do projeto Adventure Works: um catálogo `raw` com um schema por fonte de dados, tabelas Delta gerenciadas e colunas de rastreabilidade em todas as tabelas.
+
+---
+
+## 🗂️ Estrutura no Unity Catalog
+
+Provisionada uma única vez por [`databricks/setup/setup_catalogs_schemas.sql`](../databricks/setup/setup_catalogs_schemas.sql):
+
+```text
+raw                              ← Bronze
+├── source_olist                 ← tabelas Delta do Olist
+│   └── landing (Volume)         ← CSVs vindos do Kaggle
+└── source_crm                   ← tabelas Delta do CRM fictício (Fase 3)
+    └── landing (Volume)
+
+sandbox.dbt_sara                 ← desenvolvimento dbt (Fase 4)
+producao.staging / trusted       ← Silver (Fase 4)
+producao.marts                   ← Gold   (Fase 4)
+```
+
+Os nomes podem ser alterados por variáveis de ambiente (`UC_RAW_CATALOG`, `UC_OLIST_SCHEMA`, `UC_CRM_SCHEMA`, `UC_LANDING_VOLUME`); ver [`pipelines/config.py`](../pipelines/config.py).
 
 ---
 
 ## 🏗️ Como a Ingestão Funciona?
 
-O pipeline foi construído no script `pipelines/download_data.py`. Ele realiza as seguintes operações orquestradas:
+A ingestão tem duas etapas: **landing** (local → Volume) e **Bronze** (Volume → Delta).
 
-1. **Extração Automática (Kaggle API):** 
-   O script se autentica na API do Kaggle e faz o download automático do pacote `olistbr/brazilian-ecommerce` (aprox. 45MB compactado) em uma pasta temporária `data/raw/`.
+### Etapa 1 — Landing (`pipelines/download_data.py`, roda localmente)
 
-2. **Unzip & Preparação:**
-   O pacote é descompactado revelando os 9 arquivos CSV cruciais para a análise (clientes, pedidos, avaliações, pagamentos, etc).
+1. **Extração automática (Kaggle CLI):** baixa o pacote `olistbr/brazilian-ecommerce` em `data/raw/`.
+2. **Unzip & preparação:** descompacta os 9 CSVs.
+3. **Governança ativa (AI Validation Layer):** apenas tabelas mapeadas em `allowed_tables` de [`ml_ops/validation_layer/rules.yaml`](../ml_ops/validation_layer/rules.yaml) seguem adiante. Tabelas desconhecidas são ignoradas.
+4. **Upload para o Unity Catalog:** a Databricks CLI copia os arquivos aprovados para o Volume `/Volumes/raw/source_olist/landing/`.
+5. **Sanitização local:** o diretório temporário é removido.
 
-3. **Governança Ativa (AI Validation Layer Check):**
-   Antes de permitir a subida para o Data Lake, o pipeline lê as regras estabelecidas em `ml_ops/validation_layer/rules.yaml`. Apenas os arquivos (tabelas) que estiverem mapeados na chave `allowed_tables` receberão permissão de upload. Se uma tabela desconhecida aparecer, ela é ignorada, prevenindo sujeira e alucinações futuras do modelo de IA.
+### Etapa 2 — Bronze (`databricks/ingestao_bronze.py`, roda no Databricks)
 
-4. **Carga na Nuvem (Databricks CLI):**
-   Utilizando a Databricks CLI configurada na fase anterior, os arquivos autorizados são transferidos de forma nativa para o `dbfs:/olist/bronze/`.
+Notebook PySpark (formato *source*, versionado no Git) que, para cada CSV do Volume:
 
-5. **Sanitização Local:**
-   A pasta temporária local é totalmente deletada para manter o ambiente de desenvolvimento livre de lixo residual (já que os dados agora estão seguros na nuvem).
+* lê o arquivo **sem inferência de tipos**, porque a tipagem fica no staging do dbt e a Bronze preserva o dado como veio;
+* trata `multiLine` (comentários de reviews com quebra de linha) e o **BOM** no header de `product_category_name_translation.csv`;
+* normaliza os nomes de colunas para Delta Lake;
+* adiciona as colunas de rastreabilidade `_ingestion_timestamp`, `_source_schema`, `_source_table`, `_source_database` e `_storage_type`;
+* grava uma **tabela Delta gerenciada** `raw.source_olist.<tabela>` e registra um `COMMENT` com origem, volume de registros e data de carga.
+
+| Widget | Valores | Descrição |
+|---|---|---|
+| `source` | `olist`, `crm`, `all` | Fonte a ser ingerida |
+| `mode` | `full`, `incremental` | `incremental` pula tabelas já existentes |
+
+A lógica fica em [`pipelines/bronze.py`](../pipelines/bronze.py), coberta por testes unitários com Spark local. O notebook só lê os widgets e chama `run_bronze_pipeline`.
 
 ---
 
 ## 🚀 Como Executar
 
-Para simplificar a operação (uma boa prática em Data Engineering), criamos um atalho no `Makefile`. 
+1. **Provisionar o Unity Catalog** (uma vez): rode `databricks/setup/setup_catalogs_schemas.sql` no SQL Editor.
+2. **Landing:** na raiz do projeto, com a `venv` ativada:
+   ```bash
+   make ingest
+   ```
+   Para apenas baixar e filtrar, sem enviar ao Databricks: `python -m pipelines.download_data --skip-upload`.
+3. **Bronze:** no workspace, abra o repositório como *Git folder* e execute `databricks/ingestao_bronze.py` com `source = olist`.
 
-No diretório raiz do projeto (com a `venv` ativada), basta executar:
+### 💡 Validando a ingestão
 
 ```bash
-make ingest
+databricks fs ls dbfs:/Volumes/raw/source_olist/landing/
 ```
 
-### O que você verá no console:
-Você verá uma série de logs mostrando cada etapa:
-1. `📦 Baixando dataset...`
-2. Mensagens do tipo `⬆️ [Governança: Aprovado] Enviando...` para cada tabela que foi autorizada pela *Validation Layer*.
-3. Limpeza dos dados e conclusão da pipeline.
+```sql
+SHOW TABLES IN raw.source_olist;
+SELECT COUNT(*) FROM raw.source_olist.orders;   -- 99.441
+```
 
 ---
 
-## 📊 Arquivos Disponibilizados na Bronze
+## 📊 Tabelas disponibilizadas na Bronze
 
-Se a execução for concluída com sucesso, você terá no Databricks as seguintes tabelas em estado cru (formato CSV):
-
-* `customers`
-* `geolocation`
-* `order_items`
-* `order_payments`
-* `order_reviews`
-* `orders`
-* `products`
-* `sellers`
-* `product_category_name_translation`
-
-### 💡 Dica: Validando a Ingestão
-Para ter certeza de que os arquivos chegaram com sucesso na nuvem sem precisar abrir o navegador, você pode listar os arquivos direto pelo seu terminal rodando:
-
-```bash
-databricks fs ls dbfs:/olist/bronze/
-```
+| Tabela | Registros |
+|---|---:|
+| `raw.source_olist.customers` | 99.441 |
+| `raw.source_olist.geolocation` | 1.000.163 |
+| `raw.source_olist.order_items` | 112.650 |
+| `raw.source_olist.order_payments` | 103.886 |
+| `raw.source_olist.order_reviews` | 99.224 |
+| `raw.source_olist.orders` | 99.441 |
+| `raw.source_olist.products` | 32.951 |
+| `raw.source_olist.sellers` | 3.095 |
+| `raw.source_olist.product_category_name_translation` | 71 |
 
 ---
 
 ## Próxima Fase
-Com a Bronze populada e a governança de IA já aplicando regras desde a origem, estamos prontos para plugar o Apache Spark e tratar esses dados na fase Silver.
+Com a Bronze do Olist populada, a Fase 3 gera um **CRM fictício** ligado aos clientes do marketplace pelo `customer_unique_id` e o ingere pelo mesmo notebook Bronze (`source = crm`).
 
-→ Fase 3: Processamento e Limpeza (Silver Layer) *(Em breve)*
+→ [Fase 3 — CRM Fictício](./phase-03-crm.md)

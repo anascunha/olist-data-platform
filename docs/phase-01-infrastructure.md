@@ -109,11 +109,10 @@ databricks configure
 Ao final desta fase, a seguinte arquitetura estará configurada:
 
 ```text
-Databricks (Workspace Cloud)
-└── DBFS (Databricks File System)
-    ├── /olist/bronze/   ← dados brutos (Parquet/Delta/CSV)
-    ├── /olist/silver/   ← dados limpos e padronizados
-    └── /olist/gold/     ← dados modelados para analytics e IA
+Databricks (Workspace Cloud) — Unity Catalog
+├── raw.source_olist / raw.source_crm   ← Bronze (Volumes de landing + tabelas Delta)
+├── producao.staging / producao.trusted ← Silver (dbt)
+└── producao.marts                      ← Gold (dbt)
 
 Local
 └── Ambientes
@@ -127,4 +126,4 @@ Local
 ## Próxima fase
 
 Com a infraestrutura e credenciais prontas, o próximo passo é configurar o script de download automatizado:
-→ [Fase 2 — Pipeline de Ingestão](./phase-02-ingestion.md) *(em breve)*
+→ [Fase 2 — Pipeline de Ingestão](./phase-02-ingestion.md)

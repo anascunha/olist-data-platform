@@ -1,138 +1,164 @@
 """
 Unit tests for pipelines/download_data.py
 
-Strategy: mock KaggleApi and os.makedirs so tests run with no
-credentials and without touching the filesystem or network.
+Strategy: mock subprocess (Kaggle CLI / Databricks CLI) so tests run with no
+credentials and no network. Filesystem operations use pytest's tmp_path.
 """
 
-from unittest.mock import MagicMock, patch
+import subprocess
+import zipfile
+from unittest.mock import patch
+
+from pipelines import download_data
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 
-def _run(download_path="data/raw"):
-    """Import and call the function under test inside every test so that
-    module-level patches applied via `patch` decorators are honoured."""
-    from pipelines.download_data import download_olist_dataset
+def _fake_kaggle_download(tmp_dir, files):
+    """Returns a side_effect for subprocess.run that writes the dataset zip."""
 
-    download_olist_dataset(download_path)
+    def _side_effect(cmd, check):
+        with zipfile.ZipFile(tmp_dir / "brazilian-ecommerce.zip", "w") as zf:
+            for name in files:
+                zf.writestr(name, "col_a,col_b\n1,2\n")
 
-
-# ---------------------------------------------------------------------------
-# Tests — happy path
-# ---------------------------------------------------------------------------
-
-
-class TestDownloadOlistDatasetSuccess:
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_creates_download_directory(self, mock_makedirs, mock_api_cls):
-        mock_api_cls.return_value.authenticate.return_value = None
-        mock_api_cls.return_value.dataset_download_files.return_value = None
-
-        _run("data/raw")
-
-        mock_makedirs.assert_called_once_with("data/raw", exist_ok=True)
-
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_authenticates_kaggle_api(self, mock_makedirs, mock_api_cls):
-        mock_instance = MagicMock()
-        mock_api_cls.return_value = mock_instance
-
-        _run()
-
-        mock_instance.authenticate.assert_called_once()
-
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_downloads_correct_dataset(self, mock_makedirs, mock_api_cls):
-        mock_instance = MagicMock()
-        mock_api_cls.return_value = mock_instance
-
-        _run()
-
-        mock_instance.dataset_download_files.assert_called_once_with(
-            "olistbr/brazilian-ecommerce",
-            path="data/raw",
-            unzip=True,
-        )
-
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_custom_download_path_is_used(self, mock_makedirs, mock_api_cls):
-        mock_instance = MagicMock()
-        mock_api_cls.return_value = mock_instance
-
-        _run("custom/path")
-
-        mock_makedirs.assert_called_once_with("custom/path", exist_ok=True)
-        mock_instance.dataset_download_files.assert_called_once_with(
-            "olistbr/brazilian-ecommerce",
-            path="custom/path",
-            unzip=True,
-        )
-
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_success_prints_confirmation(self, mock_makedirs, mock_api_cls, capsys):
-        mock_api_cls.return_value = MagicMock()
-
-        _run()
-
-        captured = capsys.readouterr()
-        assert "Download e extração concluídos com sucesso" in captured.out
+    return _side_effect
 
 
 # ---------------------------------------------------------------------------
-# Tests — error / edge cases
+# download_dataset
 # ---------------------------------------------------------------------------
 
 
-class TestDownloadOlistDatasetErrors:
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_authentication_error_is_caught(self, mock_makedirs, mock_api_cls, capsys):
-        mock_api_cls.return_value.authenticate.side_effect = Exception("auth failed")
+class TestDownloadDataset:
+    def test_calls_kaggle_cli_with_dataset(self, tmp_path):
+        with patch("pipelines.download_data.subprocess.run") as mock_run:
+            mock_run.side_effect = _fake_kaggle_download(tmp_path, ["olist_orders_dataset.csv"])
+            download_data.download_dataset(tmp_path)
 
-        # Should not raise — errors are handled internally
-        _run()
+        cmd = mock_run.call_args.args[0]
+        assert cmd[:3] == ["kaggle", "datasets", "download"]
+        assert "olistbr/brazilian-ecommerce" in cmd
 
-        captured = capsys.readouterr()
-        assert "Erro ao baixar o dataset" in captured.out
+    def test_extracts_zip_and_removes_it(self, tmp_path):
+        with patch("pipelines.download_data.subprocess.run") as mock_run:
+            mock_run.side_effect = _fake_kaggle_download(tmp_path, ["olist_orders_dataset.csv"])
+            assert download_data.download_dataset(tmp_path) is True
 
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_download_error_is_caught(self, mock_makedirs, mock_api_cls, capsys):
-        mock_instance = MagicMock()
-        mock_instance.dataset_download_files.side_effect = Exception("network error")
-        mock_api_cls.return_value = mock_instance
+        assert (tmp_path / "olist_orders_dataset.csv").exists()
+        assert not (tmp_path / "brazilian-ecommerce.zip").exists()
 
-        _run()
+    def test_kaggle_error_returns_false(self, tmp_path, capsys):
+        with patch("pipelines.download_data.subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.CalledProcessError(1, "kaggle")
+            assert download_data.download_dataset(tmp_path) is False
 
-        captured = capsys.readouterr()
-        assert "Erro ao baixar o dataset" in captured.out
+        assert "Erro ao baixar o dataset" in capsys.readouterr().out
 
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_error_message_contains_exception_detail(
-        self, mock_makedirs, mock_api_cls, capsys
-    ):
-        mock_api_cls.return_value.authenticate.side_effect = Exception("missing key")
+    def test_missing_cli_returns_false(self, tmp_path):
+        with patch("pipelines.download_data.subprocess.run", side_effect=FileNotFoundError):
+            assert download_data.download_dataset(tmp_path) is False
 
-        _run()
+    def test_missing_zip_returns_false(self, tmp_path, capsys):
+        with patch("pipelines.download_data.subprocess.run"):
+            assert download_data.download_dataset(tmp_path) is False
 
-        captured = capsys.readouterr()
-        assert "missing key" in captured.out
+        assert "zip não encontrado" in capsys.readouterr().out
 
-    @patch("kaggle.api.kaggle_api_extended.KaggleApi")
-    @patch("pipelines.download_data.os.makedirs")
-    def test_makedirs_called_before_api_on_error(self, mock_makedirs, mock_api_cls):
-        """Directory must be created even when the API call fails."""
-        mock_api_cls.return_value.authenticate.side_effect = Exception("fail")
 
-        _run("data/raw")
+# ---------------------------------------------------------------------------
+# stage_allowed_files (governança)
+# ---------------------------------------------------------------------------
 
-        mock_makedirs.assert_called_once_with("data/raw", exist_ok=True)
+
+class TestStageAllowedFiles:
+    def _populate(self, directory, names):
+        for name in names:
+            (directory / name).write_text("a,b\n1,2\n")
+
+    def test_moves_only_allowed_tables(self, tmp_path):
+        src, dst = tmp_path / "raw", tmp_path / "landing"
+        src.mkdir()
+        self._populate(src, ["olist_orders_dataset.csv", "olist_unknown_dataset.csv"])
+
+        moved = download_data.stage_allowed_files(src, dst, ["orders"])
+
+        assert moved == ["olist_orders_dataset.csv"]
+        assert (dst / "olist_orders_dataset.csv").exists()
+        assert (src / "olist_unknown_dataset.csv").exists()
+
+    def test_without_rules_moves_every_csv(self, tmp_path):
+        src, dst = tmp_path / "raw", tmp_path / "landing"
+        src.mkdir()
+        self._populate(src, ["olist_orders_dataset.csv", "readme.txt"])
+
+        moved = download_data.stage_allowed_files(src, dst, None)
+
+        assert moved == ["olist_orders_dataset.csv"]
+
+    def test_rules_file_allows_all_nine_olist_tables(self):
+        allowed = download_data.get_allowed_tables(download_data.load_rules())
+        assert len(allowed) == 9
+        assert {"orders", "customers", "order_items", "order_payments"} <= set(allowed)
+
+
+# ---------------------------------------------------------------------------
+# upload_to_volume
+# ---------------------------------------------------------------------------
+
+
+class TestUploadToVolume:
+    def test_uses_databricks_cli_with_volume_path(self, tmp_path):
+        with patch("pipelines.download_data.subprocess.run") as mock_run:
+            ok = download_data.upload_to_volume(tmp_path, "/Volumes/raw/source_olist/landing")
+
+        assert ok is True
+        cmd = mock_run.call_args.args[0]
+        assert cmd[:3] == ["databricks", "fs", "cp"]
+        assert cmd[-1] == "dbfs:/Volumes/raw/source_olist/landing"
+
+    def test_upload_error_returns_false(self, tmp_path, capsys):
+        with patch(
+            "pipelines.download_data.subprocess.run",
+            side_effect=subprocess.CalledProcessError(1, "databricks"),
+        ):
+            assert download_data.upload_to_volume(tmp_path, "/Volumes/x/y/z") is False
+
+        assert "Erro no upload" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
+
+
+class TestMain:
+    def test_stops_when_download_fails(self):
+        with patch("pipelines.download_data.download_dataset", return_value=False), patch(
+            "pipelines.download_data.upload_to_volume"
+        ) as mock_upload:
+            assert download_data.main([]) == 1
+
+        mock_upload.assert_not_called()
+
+    def test_skip_upload_flag(self):
+        with patch("pipelines.download_data.download_dataset", return_value=True), patch(
+            "pipelines.download_data.stage_allowed_files", return_value=["a.csv"]
+        ), patch("pipelines.download_data.shutil.rmtree"), patch(
+            "pipelines.download_data.upload_to_volume"
+        ) as mock_upload:
+            assert download_data.main(["--skip-upload"]) == 0
+
+        mock_upload.assert_not_called()
+
+    def test_uploads_to_olist_volume(self):
+        with patch("pipelines.download_data.download_dataset", return_value=True), patch(
+            "pipelines.download_data.stage_allowed_files", return_value=["a.csv"]
+        ), patch("pipelines.download_data.shutil.rmtree"), patch(
+            "pipelines.download_data.upload_to_volume", return_value=True
+        ) as mock_upload:
+            assert download_data.main([]) == 0
+
+        assert mock_upload.call_args.args[1] == "/Volumes/raw/source_olist/landing"
