@@ -8,9 +8,20 @@ O grande diferencial deste projeto é a **Estratégia Zero-Budget**: toda a infr
 ## 🏗️ Arquitetura de Dados (Medallion)
 A plataforma adota a **Arquitetura Medalhão** para garantir governança, qualidade e rastreabilidade:
 
-* **Bronze (Raw):** CSVs do Kaggle enviados a um **Volume do Unity Catalog** e convertidos em tabelas Delta gerenciadas (`raw.source_olist.*`) por um notebook **PySpark**.
-* **Silver (Trusted):** Limpeza, padronização e deduplicação utilizando **PySpark** no **Databricks**.
-* **Gold (Curated):** Modelagem dimensional (**Star Schema/Kimball**) via **dbt Core**, otimizada para consumo analítico e IA.
+* **Bronze (Raw):** CSVs do Kaggle e de um **CRM fictício** enviados a **Volumes do Unity Catalog** e convertidos em tabelas Delta gerenciadas (`raw.source_olist.*`, `raw.source_crm.*`) por um notebook **PySpark**.
+* **Silver (Staging + Trusted):** Tipagem, padronização, regras de negócio e deduplicação via **dbt** (`producao.staging`, `producao.trusted`).
+* **Gold (Marts):** Modelagem dimensional (**Kimball**) via **dbt** (`producao.marts`), respondendo **quais clientes do CRM compram no marketplace, quanto e com que frequência**.
+
+### 🔗 CRM x Marketplace
+Um gerador determinístico (Faker, `seed 42`) cria um CRM genérico com 20 mil contatos, campanhas, responsáveis e atividades. 75% dos contatos são ligados a clientes reais do Olist pelo `customer_unique_id`; os demais são leads que nunca compraram. A Gold cruza as duas fontes:
+
+| Resultado (dados reais do Olist + CRM fictício) | |
+|---|---:|
+| Contatos do CRM que compram no marketplace | **74,3%** |
+| Recompradores entre os compradores | 7,8% |
+| Ticket médio | R$ 158,68 |
+| Intervalo médio entre pedidos (recompradores) | 82,5 dias |
+| Contatos que compram mas o CRM ainda trata como lead | **3.588** |
 
 ## 🛠️ Stack Tecnológica
 * **Processamento & Data Lake:** [Databricks Free Edition](https://www.databricks.com/learn/free-edition) (Spark, Delta Lake & Unity Catalog).
@@ -37,8 +48,9 @@ This layer enforces:
 ```text
 ├── .github/workflows/   # Automação de CI/CD (Linter e dbt Test)
 ├── docs/                # Documentação técnica e dicionário de dados
-├── pipelines/           # Scripts de ingestão e processamento Spark
-├── transform/           # Projeto dbt (Models, Macros, Snapshots)
+├── databricks/          # Notebooks Databricks (Bronze, setup do Unity Catalog e do Job)
+├── pipelines/           # Ingestão Kaggle, gerador do CRM e lógica Bronze (PySpark)
+├── transform/           # Projeto dbt (staging, trusted, marts, testes)
 └── ml_ops/              # Implementação de IA e Governança
     ├── ai_agent/        # Interface NL2SQL
     └── validation_layer/# Camada de validação de queries (Schema, SQL, Docs)
@@ -69,4 +81,6 @@ Para o passo a passo completo sobre como configurar o Databricks Community Editi
 
 * 📖 [Fase 1 — Infraestrutura e Configuração do Ambiente](./docs/phase-01-infrastructure.md)
 * 📖 [Fase 2 — Pipeline de Ingestão (Bronze)](./docs/phase-02-ingestion.md)
+* 📖 [Fase 3 — CRM Fictício ligado ao Olist](./docs/phase-03-crm.md)
+* 📖 [Fase 4 — Transformação com dbt (Silver e Gold)](./docs/phase-04-dbt.md)
 * *(Mais fases em breve...)*

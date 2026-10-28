@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: >
+      Fato de pedidos do marketplace ligada às dimensões de cliente e de contato do CRM.
+      A granularidade é por pedido. contact_sk é nulo quando o cliente não está no CRM.
+    config:
+      meta:
+        graining: order
+        contains_pii: false
+        load_frequency: on demand
+    columns:
+      - name: order_sk
+        description: Surrogate key do pedido.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: order_id
+        description: Chave natural do pedido.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_sk
+        description: Chave da dim_customer.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_sk
+
+      - name: contact_sk
+        description: Chave da dim_crm_contact. Nula quando o cliente não está no CRM.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_crm_contact')
+                field: contact_sk
+
+      - name: customer_unique_id
+        description: '{{ doc("customer_unique_id") }}'
+
+      - name: contact_id
+        description: Contato do CRM ligado ao pedido.
+
+      - name: order_status
+        description: '{{ doc("order_status") }}'
+
+      - name: is_valid_order
+        description: True quando o pedido conta como compra.
+        data_tests:
+          - not_null
+
+      - name: purchased_at
+        description: Data e hora da compra.
+
+      - name: purchase_date
+        description: Data da compra.
+
+      - name: delivered_to_customer_at
+        description: Data e hora da entrega.
+
+      - name: is_delivered
+        description: True quando entregue.
+
+      - name: is_delivered_late
+        description: True quando entregue após o prazo estimado.
+
+      - name: items_quantity
+        description: Quantidade de itens.
+
+      - name: distinct_products
+        description: Produtos distintos.
+
+      - name: products_value
+        description: Valor dos produtos em BRL.
+
+      - name: freight_value
+        description: Valor do frete em BRL.
+
+      - name: order_value
+        description: Valor do pedido em BRL (produtos + frete).
+        data_tests:
+          - not_null
+
+      - name: payment_value
+        description: Valor pago em BRL.
+
+      - name: main_payment_type
+        description: Forma de pagamento principal.
+
+      - name: max_payment_installments
+        description: Maior número de parcelas.
+
+      - name: is_crm_contact
+        description: True quando o cliente do pedido existe no CRM.
+        data_tests:
+          - not_null
+
+      - name: is_after_crm_entry
+        description: >
+          True quando o pedido foi feito depois da criação do contato no CRM.
+          Nulo para clientes fora do CRM.

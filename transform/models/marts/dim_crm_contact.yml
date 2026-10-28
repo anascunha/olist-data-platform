@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: dim_crm_contact
+    description: >
+      Dimensão de contatos do CRM (deduplicados) com responsável, campanha de origem e
+      resumo de atividades. A granularidade é por contato.
+    config:
+      meta:
+        graining: contact
+        contains_pii: true
+        access_type: private
+        load_frequency: on demand
+    columns:
+      - name: contact_sk
+        description: Surrogate key da dimensão, gerada via hash do contact_id.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: contact_id
+        description: Chave natural do contato no CRM.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_unique_id
+        description: Cliente do Olist ligado ao contato. Nulo quando o contato só existe no CRM.
+        data_tests:
+          - unique
+
+      - name: is_linked_to_marketplace
+        description: True quando o contato tem customer_unique_id.
+        data_tests:
+          - not_null
+
+      - name: lifecycle_stage
+        description: '{{ doc("lifecycle_stage") }}'
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['lead', 'mql', 'opportunity', 'customer', 'churned', 'disqualified']
+
+      - name: owner_team
+        description: Time do responsável pelo contato.
+        data_tests:
+          - not_null
+
+      - name: email
+        description: E-mail normalizado (trim + minúsculas).
+
+      - name: created_at
+        description: Criação do contato no CRM.
+        data_tests:
+          - not_null

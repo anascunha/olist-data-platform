@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: stg_crm__campaigns
+    description: >
+      Modelo de staging das campanhas de marketing do CRM. A granularidade é por campanha.
+    config:
+      meta:
+        graining: campaign
+        contains_pii: false
+        source_system: CRM fictício
+        ingestion_type: full load
+        load_frequency: on demand
+    columns:
+      - name: campaign_id
+        description: >
+          Identificador único da campanha (Chave Primária).
+        data_tests:
+          - unique
+          - not_null
+
+      - name: campaign_name
+        description: >
+          Nome da campanha (tema sazonal, ano e canal).
+
+      - name: campaign_channel
+        description: >
+          Canal de mídia da campanha.
+        data_tests:
+          - not_null
+
+      - name: campaign_start_date
+        description: >
+          Data de início.
+        data_tests:
+          - not_null
+
+      - name: campaign_end_date
+        description: >
+          Data de término.
+
+      - name: campaign_budget_brl
+        description: >
+          Orçamento da campanha em BRL.
+
+      - name: _ingestion_timestamp
+        description: '{{ doc("_ingestion_timestamp") }}'
+
+      - name: _source_schema
+        description: '{{ doc("_source_schema") }}'
+
+      - name: _source_table
+        description: '{{ doc("_source_table") }}'
+
+      - name: _source_database
+        description: '{{ doc("_source_database") }}'
+
+      - name: _storage_type
+        description: '{{ doc("_storage_type") }}'

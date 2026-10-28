@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: stg_crm__owners
+    description: >
+      Modelo de staging dos responsáveis (vendedores e analistas) do CRM. A granularidade é
+      por owner.
+    config:
+      meta:
+        graining: owner
+        contains_pii: true
+        source_system: CRM fictício
+        ingestion_type: full load
+        load_frequency: on demand
+    columns:
+      - name: owner_id
+        description: >
+          Identificador único do responsável (Chave Primária).
+        data_tests:
+          - unique
+          - not_null
+
+      - name: owner_name
+        description: >
+          Nome do responsável.
+
+      - name: owner_email
+        description: >
+          E-mail corporativo do responsável.
+
+      - name: owner_team
+        description: >
+          Time do responsável.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Inside Sales', 'Key Accounts', 'Customer Success']
+
+      - name: owner_region
+        description: >
+          Região atendida.
+
+      - name: hired_at
+        description: >
+          Data de contratação.
+
+      - name: is_active
+        description: >
+          Indica se o responsável está ativo.
+
+      - name: _ingestion_timestamp
+        description: '{{ doc("_ingestion_timestamp") }}'
+
+      - name: _source_schema
+        description: '{{ doc("_source_schema") }}'
+
+      - name: _source_table
+        description: '{{ doc("_source_table") }}'
+
+      - name: _source_database
+        description: '{{ doc("_source_database") }}'
+
+      - name: _storage_type
+        description: '{{ doc("_storage_type") }}'

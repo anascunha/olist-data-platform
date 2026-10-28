@@ -1,0 +1,21 @@
+# Perfil
+olist:
+  target: "{{ env_var('TARGET_ENV', 'dev') }}"
+  outputs:
+    dev:
+      type: databricks
+      catalog: "{{ env_var('DBT_DATABRICKS_CATALOG', 'sandbox') }}"
+      schema: "{{ env_var('DBT_DATABRICKS_SCHEMA', 'dbt_sara') }}"
+      host: "{{ env_var('DBT_DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DBT_DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DBT_DATABRICKS_TOKEN') }}"
+      threads: 4
+
+    prod:
+      type: databricks
+      catalog: producao
+      schema: marts
+      host: "{{ env_var('DBT_DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DBT_DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DBT_DATABRICKS_TOKEN') }}"
+      threads: 4

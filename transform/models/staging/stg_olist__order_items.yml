@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: stg_olist__order_items
+    description: >
+      Modelo de staging dos itens de pedido do Olist. A granularidade é por item de pedido
+      (order_id + order_item_id).
+    config:
+      meta:
+        graining: order_item
+        contains_pii: false
+        source_system: Olist (Kaggle)
+        ingestion_type: full load
+        load_frequency: on demand
+    columns:
+      - name: order_id
+        description: >
+          Identificador do pedido (Chave Estrangeira).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist__orders')
+                field: order_id
+
+      - name: order_item_id
+        description: >
+          Número sequencial do item dentro do pedido.
+        data_tests:
+          - not_null
+
+      - name: product_id
+        description: >
+          Identificador do produto (Chave Estrangeira).
+        data_tests:
+          - not_null
+
+      - name: seller_id
+        description: >
+          Identificador do vendedor.
+        data_tests:
+          - not_null
+
+      - name: shipping_limit_at
+        description: >
+          Prazo limite para o vendedor despachar o item.
+
+      - name: item_price
+        description: >
+          Preço do item em BRL.
+        data_tests:
+          - not_null
+
+      - name: freight_value
+        description: >
+          Valor do frete do item em BRL (rateado quando o pedido tem vários itens).
+        data_tests:
+          - not_null
+
+      - name: _ingestion_timestamp
+        description: '{{ doc("_ingestion_timestamp") }}'
+
+      - name: _source_schema
+        description: '{{ doc("_source_schema") }}'
+
+      - name: _source_table
+        description: '{{ doc("_source_table") }}'
+
+      - name: _source_database
+        description: '{{ doc("_source_database") }}'
+
+      - name: _storage_type
+        description: '{{ doc("_storage_type") }}'

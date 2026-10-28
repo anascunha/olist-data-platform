@@ -1,0 +1,97 @@
+version: 2
+
+models:
+  - name: tru_orders
+    description: >
+      Modelo trusted de pedidos: une pedido, cliente (customer_unique_id), itens e pagamentos
+      e aplica a regra de pedido válido (status fora de var invalid_order_statuses).
+      A granularidade é por pedido.
+    config:
+      meta:
+        graining: order
+        contains_pii: false
+        load_frequency: on demand
+    columns:
+      - name: order_id
+        description: Identificador único do pedido.
+        data_type: string
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        description: Identificador do cliente no pedido.
+        data_type: string
+
+      - name: customer_unique_id
+        description: '{{ doc("customer_unique_id") }}'
+        data_type: string
+        data_tests:
+          - not_null
+
+      - name: customer_city
+        description: Cidade do cliente no pedido.
+
+      - name: customer_state
+        description: UF do cliente no pedido.
+
+      - name: order_status
+        description: '{{ doc("order_status") }}'
+
+      - name: is_valid_order
+        description: True quando o pedido conta como compra (não cancelado/indisponível).
+        data_tests:
+          - not_null
+
+      - name: purchased_at
+        description: Data e hora da compra.
+
+      - name: purchase_date
+        description: Data da compra.
+
+      - name: approved_at
+        description: Data e hora da aprovação do pagamento.
+
+      - name: delivered_to_customer_at
+        description: Data e hora da entrega ao cliente.
+
+      - name: estimated_delivery_at
+        description: Data estimada de entrega.
+
+      - name: is_delivered
+        description: True quando há data de entrega ao cliente.
+
+      - name: is_delivered_late
+        description: True quando entregue após a data estimada. Nulo se não entregue.
+
+      - name: items_quantity
+        description: Quantidade de itens do pedido.
+
+      - name: distinct_products
+        description: Quantidade de produtos distintos no pedido.
+
+      - name: distinct_sellers
+        description: Quantidade de vendedores distintos no pedido.
+
+      - name: products_value
+        description: Soma do preço dos itens em BRL.
+
+      - name: freight_value
+        description: Soma do frete dos itens em BRL.
+
+      - name: order_value
+        description: Valor do pedido em BRL (produtos + frete). Métrica de receita da Gold.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+
+      - name: payment_value
+        description: Soma dos pagamentos do pedido em BRL.
+
+      - name: main_payment_type
+        description: Forma de pagamento de maior valor no pedido.
+
+      - name: max_payment_installments
+        description: Maior número de parcelas entre os pagamentos do pedido.

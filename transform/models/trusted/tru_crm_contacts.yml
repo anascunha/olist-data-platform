@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: tru_crm_contacts
+    description: >
+      Modelo trusted dos contatos do CRM: deduplica o export (mantém a versão com maior
+      updated_at por contact_id) e enriquece com responsável, campanha de origem e resumo
+      das atividades. A granularidade é por contato.
+    config:
+      meta:
+        graining: contact
+        contains_pii: true
+        access_type: restricted
+        load_frequency: on demand
+    columns:
+      - name: contact_id
+        description: Identificador único do contato.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_unique_id
+        description: Cliente do Olist ligado ao contato. Nulo quando o contato só existe no CRM.
+        data_tests:
+          - unique
+
+      - name: is_linked_to_marketplace
+        description: True quando o contato tem customer_unique_id.
+
+      - name: first_name
+        description: Primeiro nome.
+
+      - name: last_name
+        description: Sobrenome.
+
+      - name: full_name
+        description: Nome completo.
+
+      - name: email
+        description: E-mail normalizado.
+
+      - name: phone_e164
+        description: Telefone no padrão E.164.
+
+      - name: birth_date
+        description: Data de nascimento.
+
+      - name: contact_city
+        description: Cidade do contato.
+
+      - name: contact_state
+        description: UF do contato.
+
+      - name: lifecycle_stage
+        description: '{{ doc("lifecycle_stage") }}'
+
+      - name: lead_source
+        description: Origem do contato.
+
+      - name: campaign_id
+        description: Campanha de origem.
+
+      - name: campaign_name
+        description: Nome da campanha. 'no campaign' para origem orgânica.
+
+      - name: campaign_channel
+        description: Canal da campanha.
+
+      - name: owner_id
+        description: Responsável pelo contato.
+
+      - name: owner_name
+        description: Nome do responsável.
+
+      - name: owner_team
+        description: Time do responsável.
+
+      - name: owner_region
+        description: Região do responsável.
+
+      - name: owner_is_active
+        description: Indica se o responsável está ativo.
+
+      - name: marketing_opt_in
+        description: Consentimento para marketing.
+
+      - name: created_at
+        description: Criação do contato no CRM.
+
+      - name: updated_at
+        description: Última atualização do contato (versão mantida).
+
+      - name: activities_count
+        description: Quantidade de atividades registradas.
+
+      - name: first_activity_at
+        description: Primeira atividade registrada.
+
+      - name: last_activity_at
+        description: Última atividade registrada.

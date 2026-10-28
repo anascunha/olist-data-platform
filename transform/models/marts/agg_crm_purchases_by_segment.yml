@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: agg_crm_purchases_by_segment
+    description: '{{ doc("agg_crm_purchases_by_segment") }}'
+    config:
+      meta:
+        graining: dimension_value
+        contains_pii: false
+        load_frequency: on demand
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - dimension_name
+              - dimension_value
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "buyers <= contacts and repeat_buyers <= buyers"
+    columns:
+      - name: dimension_name
+        description: Dimensão de análise.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['overall', 'lead_source', 'lifecycle_stage', 'owner_team', 'buyer_segment', 'contact_state']
+
+      - name: dimension_value
+        description: Valor da dimensão ('all' para overall).
+        data_tests:
+          - not_null
+
+      - name: contacts
+        description: Contatos do CRM no segmento.
+
+      - name: buyers
+        description: Contatos com ao menos um pedido válido.
+
+      - name: repeat_buyers
+        description: Contatos com dois ou mais pedidos válidos.
+
+      - name: total_orders
+        description: Pedidos válidos.
+
+      - name: total_revenue
+        description: Receita em BRL.
+
+      - name: buyer_rate
+        description: buyers / contacts.
+
+      - name: repeat_buyer_rate
+        description: repeat_buyers / buyers.
+
+      - name: revenue_per_contact
+        description: Receita / contatos.
+
+      - name: avg_ticket
+        description: Receita / pedidos.
+
+      - name: orders_per_buyer
+        description: Pedidos / compradores (frequência média).
+
+      - name: contacts_with_outdated_stage
+        description: Contatos que compram mas estão como lead/mql/opportunity no CRM.
