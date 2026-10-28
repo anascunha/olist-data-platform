@@ -69,4 +69,5 @@ Para o passo a passo completo sobre como configurar o Databricks Community Editi
 
 * 📖 [Fase 1 — Infraestrutura e Configuração do Ambiente](./docs/phase-01-infrastructure.md)
 * 📖 [Fase 2 — Pipeline de Ingestão (Bronze)](./docs/phase-02-ingestion.md)
+* 📖 [Fase 3 — CRM Fictício ligado ao Olist](./docs/phase-03-crm.md)
 * *(Mais fases em breve...)*

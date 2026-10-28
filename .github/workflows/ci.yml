@@ -46,7 +46,7 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: pip install pytest pytest-mock kaggle pyyaml python-dotenv pyspark==3.5.3
+        run: pip install pytest pytest-mock kaggle pyyaml python-dotenv faker==40.44.0 pyspark==3.5.3
 
       - name: Run unit tests
         run: pytest --tb=short -v
