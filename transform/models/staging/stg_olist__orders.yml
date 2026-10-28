@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: stg_olist__orders
+    description: >
+      Modelo de staging dos pedidos do Olist com status e marcos de entrega tipados como
+      timestamp. A granularidade é por pedido (order_id).
+    config:
+      meta:
+        graining: order
+        contains_pii: false
+        source_system: Olist (Kaggle)
+        ingestion_type: full load
+        load_frequency: on demand
+    columns:
+      - name: order_id
+        description: >
+          Identificador único do pedido (Chave Primária).
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        description: >
+          Identificador do cliente no pedido (Chave Estrangeira).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist__customers')
+                field: customer_id
+
+      - name: order_status
+        description: '{{ doc("order_status") }}'
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['delivered', 'shipped', 'canceled', 'unavailable', 'invoiced', 'processing', 'created', 'approved']
+
+      - name: purchased_at
+        description: >
+          Data e hora da compra.
+        data_tests:
+          - not_null
+
+      - name: approved_at
+        description: >
+          Data e hora da aprovação do pagamento.
+
+      - name: delivered_to_carrier_at
+        description: >
+          Data e hora da entrega à transportadora.
+
+      - name: delivered_to_customer_at
+        description: >
+          Data e hora da entrega ao cliente.
+
+      - name: estimated_delivery_at
+        description: >
+          Data estimada de entrega informada ao cliente na compra.
+
+      - name: _ingestion_timestamp
+        description: '{{ doc("_ingestion_timestamp") }}'
+
+      - name: _source_schema
+        description: '{{ doc("_source_schema") }}'
+
+      - name: _source_table
+        description: '{{ doc("_source_table") }}'
+
+      - name: _source_database
+        description: '{{ doc("_source_database") }}'
+
+      - name: _storage_type
+        description: '{{ doc("_storage_type") }}'

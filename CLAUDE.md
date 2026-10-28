@@ -37,11 +37,23 @@ Tests live in `tests/` and mirror the source tree (e.g. `pipelines/download_data
 ruff check .        # Python linting (also runs in CI)
 ```
 
+### dbt
+
+```bash
+cd transform && set -a && source .env && set +a
+dbt deps --profiles-dir .
+dbt build --profiles-dir .                 # dev
+TARGET_ENV=prod dbt build --profiles-dir . # prod
+```
+
+Conventions mirror the Adventure Works project: `stg_<source>__<table>`, `tru_<entity>`, `dim_/fct_/agg_`, one `.yml` per model, leading commas, generic tests with `arguments:`. Valid orders exclude `var('invalid_order_statuses')`; recency is measured against the dataset's last order (historical snapshot).
+
 ### CI Pipeline
 
 The `.github/workflows/ci.yml` runs:
 1. Python linting with Ruff (`ruff check .`)
 2. Python unit tests (`pytest --tb=short -v`, with Java for the local-Spark tests)
+3. dbt `deps` + `parse` for `dev` and `prod` targets
 
 ## Architecture
 
@@ -52,8 +64,8 @@ The platform implements a **Medallion Architecture** for the [Olist Brazilian E-
 | Layer  | Purpose | Tool |
 |--------|---------|------|
 | Bronze | CSVs in UC Volume -> Delta tables `raw.source_olist.*` | PySpark notebook `databricks/ingestao_bronze.py` |
-| Silver | Cleaned, deduplicated data | PySpark on Databricks |
-| Gold   | Dimensional model (Star Schema) | dbt-databricks |
+| Silver | `stg_*` (typing/renaming, 1:1) + `tru_*` (business rules, CRM dedup) | dbt-databricks (`transform/models/staging`, `trusted`) |
+| Gold   | `dim_*`, `fct_orders`, `agg_crm_*` (CRM x marketplace purchases) | dbt-databricks (`transform/models/marts`) |
 
 ### Infrastructure (Databricks Unity Catalog)
 
@@ -76,7 +88,7 @@ LangChain + Llama 3 (via Groq API) translates natural language questions into Da
 
 - `pipelines/` — Data ingestion scripts (Kaggle download, CRM generator, Bronze logic, UC config)
 - `databricks/` — Databricks notebooks (source format) and UC setup SQL
-- `transform/` — dbt models (not yet populated)
+- `transform/` — dbt project (profile `olist`, targets `dev` → `sandbox.<schema>`, `prod`/`databricks_cluster` → `producao.staging|trusted|marts`)
 - `ml_ops/` — LangChain NL2SQL agent (not yet populated)
 
 ### Environment Variables
@@ -105,5 +117,5 @@ The project is being built incrementally:
 2. Data ingestion pipeline (Kaggle -> UC Volume -> Bronze Delta)
    - Phase 3: fictional CRM generator (`pipelines/generate_crm.py`, `make crm`) linked to Olist by `customer_unique_id`, landed in `raw.source_crm`
 3. Unit tests (pytest) *(done — `tests/pipelines/`)*
-4. dbt tests and SQL linting (sqlfluff)
+4. dbt Silver/Gold models + data tests (`docs/phase-04-dbt.md`)
 5. Streamlit analytics UI
