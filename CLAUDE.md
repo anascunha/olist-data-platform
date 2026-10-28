@@ -4,14 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-### Local Development (Docker)
+### Local Development (venv)
 
 ```bash
-make setup          # Build Docker image
-make up             # Start containers in background
-make down           # Stop containers
-make shell          # Open interactive shell inside container
-make download-data  # Download Olist dataset from Kaggle
+make setup          # Create .venv and install requirements
+make ingest         # Kaggle -> governance filter -> UC Volume (python -m pipelines.download_data)
+make lint           # ruff check .
+make test           # pytest
 ```
 
 ### Running Streamlit UI
@@ -30,7 +29,7 @@ pytest tests/pipelines/test_download_data.py::TestDownloadOlistDatasetSuccess  #
 pytest -k "test_creates_download"   # Match by name pattern
 ```
 
-Tests live in `tests/` and mirror the source tree (e.g. `pipelines/download_data.py` → `tests/pipelines/test_download_data.py`). All external calls (KaggleApi, filesystem) are mocked so no credentials or network are required.
+Tests live in `tests/` and mirror the source tree (e.g. `pipelines/download_data.py` → `tests/pipelines/test_download_data.py`). External calls (Kaggle CLI, Databricks CLI via subprocess) are mocked; Bronze tests use a local SparkSession (skipped if Java/pyspark are missing).
 
 ### Linting
 
@@ -38,21 +37,11 @@ Tests live in `tests/` and mirror the source tree (e.g. `pipelines/download_data
 ruff check .        # Python linting (also runs in CI)
 ```
 
-### Terraform (Infrastructure)
-
-```bash
-cd infra/
-terraform fmt -check -recursive   # Format check
-terraform init -backend=false     # Initialize (no backend)
-terraform validate                # Syntax validation
-```
-
 ### CI Pipeline
 
-The `.github/workflows/ci.yml` runs three jobs automatically:
-1. Terraform format/validate checks
-2. Python linting with Ruff (`ruff check .`)
-3. Python unit tests (`pytest --tb=short -v`)
+The `.github/workflows/ci.yml` runs:
+1. Python linting with Ruff (`ruff check .`)
+2. Python unit tests (`pytest --tb=short -v`, with Java for the local-Spark tests)
 
 ## Architecture
 
@@ -62,22 +51,22 @@ The platform implements a **Medallion Architecture** for the [Olist Brazilian E-
 
 | Layer  | Purpose | Tool |
 |--------|---------|------|
-| Bronze | Raw ingestion from Kaggle | PySpark / Azure Blob |
+| Bronze | CSVs in UC Volume -> Delta tables `raw.source_olist.*` | PySpark notebook `databricks/ingestao_bronze.py` |
 | Silver | Cleaned, deduplicated data | PySpark on Databricks |
 | Gold   | Dimensional model (Star Schema) | dbt-databricks |
 
-### Infrastructure (Azure via Terraform)
+### Infrastructure (Databricks Unity Catalog)
+
+Provisioned by `databricks/setup/setup_catalogs_schemas.sql` (mirrors the Adventure Works project):
 
 ```
-Azure Resource Group
-├── Storage Account (Data Lake Gen2)
-│   ├── bronze/   ← raw Parquet/Delta
-│   ├── silver/   ← cleaned data
-│   └── gold/     ← analytics-ready
-└── Databricks Workspace (Community Edition)
+raw.source_olist (+ Volume landing)   ← Bronze Olist
+raw.source_crm   (+ Volume landing)   ← Bronze CRM
+sandbox.dbt_<user>                     ← dbt dev target
+producao.staging / trusted / marts     ← Silver / Gold (dbt prod target)
 ```
 
-Terraform files are in `infra/` (`main.tf`, `provider.tf`, `variables.tf`).
+Names are centralised in `pipelines/config.py` (overridable via `UC_*` env vars). Bronze logic lives in `pipelines/bronze.py` so it can be unit-tested with local Spark; notebooks are thin wrappers.
 
 ### AI / NL2SQL Agent (planned)
 
@@ -85,10 +74,10 @@ LangChain + Llama 3 (via Groq API) translates natural language questions into Da
 
 ### Key Directories
 
-- `pipelines/` — Data ingestion scripts (Kaggle download)
+- `pipelines/` — Data ingestion scripts (Kaggle download, Bronze logic, UC config)
+- `databricks/` — Databricks notebooks (source format) and UC setup SQL
 - `transform/` — dbt models (not yet populated)
 - `ml_ops/` — LangChain NL2SQL agent (not yet populated)
-- `infra/` — Terraform IaC for Azure
 
 ### Environment Variables
 
@@ -96,7 +85,6 @@ Copy `.env.example` to `.env` and fill in:
 
 ```bash
 KAGGLE_USERNAME / KAGGLE_KEY      # Kaggle dataset download
-ARM_CLIENT_ID / ARM_CLIENT_SECRET / ARM_SUBSCRIPTION_ID / ARM_TENANT_ID  # Azure
 DATABRICKS_HOST / DATABRICKS_TOKEN / DATABRICKS_HTTP_PATH                # Databricks
 GROQ_API_KEY                      # Llama 3 via Groq
 ```
@@ -107,7 +95,6 @@ GROQ_API_KEY                      # Llama 3 via Groq
 - **dbt Core** + `dbt-databricks` adapter
 - **LangChain** + `langchain-groq` (Llama 3)
 - **Streamlit** (analytics UI, port 8501)
-- **Terraform** (Azure IaC)
 - **Ruff** (linting), **pytest** + **pytest-mock** (tests)
 - **Docker** / **Docker Compose** for local dev
 
@@ -115,7 +102,7 @@ GROQ_API_KEY                      # Llama 3 via Groq
 
 The project is being built incrementally:
 1. Infrastructure setup and documentation *(done)*
-2. Data ingestion pipeline
+2. Data ingestion pipeline (Kaggle -> UC Volume -> Bronze Delta)
 3. Unit tests (pytest) *(done — `tests/pipelines/`)*
 4. dbt tests and SQL linting (sqlfluff)
 5. Streamlit analytics UI
