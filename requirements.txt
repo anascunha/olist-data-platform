@@ -7,5 +7,7 @@ langchain-groq
 pyspark
 delta-spark
 python-dotenv
+pyyaml
 pytest
 pytest-mock
+ruff
