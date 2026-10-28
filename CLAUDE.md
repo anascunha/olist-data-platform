@@ -74,7 +74,7 @@ LangChain + Llama 3 (via Groq API) translates natural language questions into Da
 
 ### Key Directories
 
-- `pipelines/` — Data ingestion scripts (Kaggle download, Bronze logic, UC config)
+- `pipelines/` — Data ingestion scripts (Kaggle download, CRM generator, Bronze logic, UC config)
 - `databricks/` — Databricks notebooks (source format) and UC setup SQL
 - `transform/` — dbt models (not yet populated)
 - `ml_ops/` — LangChain NL2SQL agent (not yet populated)
@@ -103,6 +103,7 @@ GROQ_API_KEY                      # Llama 3 via Groq
 The project is being built incrementally:
 1. Infrastructure setup and documentation *(done)*
 2. Data ingestion pipeline (Kaggle -> UC Volume -> Bronze Delta)
+   - Phase 3: fictional CRM generator (`pipelines/generate_crm.py`, `make crm`) linked to Olist by `customer_unique_id`, landed in `raw.source_crm`
 3. Unit tests (pytest) *(done — `tests/pipelines/`)*
 4. dbt tests and SQL linting (sqlfluff)
 5. Streamlit analytics UI
