@@ -1,6 +1,7 @@
 dbt-core
 dbt-databricks
 kaggle
+faker==40.44.0
 streamlit
 langchain
 langchain-groq

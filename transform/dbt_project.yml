@@ -1,0 +1,39 @@
+name: 'olist_dw'
+version: '1.0.0'
+
+profile: 'olist'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  # Pedidos com estes status não contam como compra (receita, frequência, recência)
+  invalid_order_statuses: ['canceled', 'unavailable']
+
+# Configuração para MODELOS (Tabelas e Views das camadas)
+models:
+  olist_dw:
+    +database: "{{ 'producao' if target.name in ('prod', 'databricks_cluster') else 'sandbox' }}"
+    +persist_docs:
+      relation: true
+      columns: true
+
+    staging:
+      +schema: staging
+      +materialized: view
+
+    trusted:
+      +schema: trusted
+      +materialized: view
+
+    marts:
+      +schema: marts
+      +materialized: table

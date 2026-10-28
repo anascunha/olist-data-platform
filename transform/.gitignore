@@ -1,0 +1,17 @@
+# dbt logs e artefatos
+logs/
+target/
+dbt_modules/
+dbt_packages/
+.user.yml
+.user.yml
+
+# AMBIENTE VIRTUAL
+dbt-env/
+
+# SEGURANÇA (MUITO IMPORTANTE)
+.env
+dbt_internal_packages/
+
+# Packages
+package-lock.yml

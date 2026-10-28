@@ -46,9 +46,37 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: pip install pytest pytest-mock kaggle pyyaml python-dotenv pyspark==3.5.3
+        run: pip install pytest pytest-mock kaggle pyyaml python-dotenv faker==40.44.0 pyspark==3.5.3
 
       - name: Run unit tests
         run: pytest --tb=short -v
 
-  # Os próximos Jobs (dbt tests, sqlfluff) serão adicionados na Fase 4
+  # Job 4: Validação do projeto dbt (compilação de Jinja, refs, sources e testes)
+  dbt-parse:
+    name: dbt Parse
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: transform
+    env:
+      DBT_DATABRICKS_HOST: ci.cloud.databricks.com
+      DBT_DATABRICKS_HTTP_PATH: /sql/1.0/warehouses/ci
+      DBT_DATABRICKS_TOKEN: ci
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt
+        run: pip install "dbt-databricks>=1.10,<2.0"
+
+      - name: dbt deps
+        run: dbt deps --profiles-dir .
+
+      - name: dbt parse (dev e prod)
+        run: |
+          TARGET_ENV=dev dbt parse --profiles-dir .
+          TARGET_ENV=prod dbt parse --profiles-dir .
