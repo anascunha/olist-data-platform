@@ -2,15 +2,17 @@
 olist:
   target: "{{ env_var('TARGET_ENV', 'dev') }}"
   outputs:
+    # dev: OAuth U2M (login pelo navegador, token de curta duração) — nenhum segredo em arquivo
     dev:
       type: databricks
+      auth_type: oauth
       catalog: "{{ env_var('DBT_DATABRICKS_CATALOG', 'sandbox') }}"
       schema: "{{ env_var('DBT_DATABRICKS_SCHEMA', 'dbt_sara') }}"
       host: "{{ env_var('DBT_DATABRICKS_HOST') }}"
       http_path: "{{ env_var('DBT_DATABRICKS_HTTP_PATH') }}"
-      token: "{{ env_var('DBT_DATABRICKS_TOKEN') }}"
       threads: 4
 
+    # prod: token por variável de ambiente (em automação, o ideal é um service principal)
     prod:
       type: databricks
       catalog: producao
