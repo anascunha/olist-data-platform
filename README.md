@@ -47,11 +47,12 @@ Rodado de ponta a ponta no **Databricks Free Edition** (serverless):
 * **Processamento & Data Lake:** [Databricks Free Edition](https://www.databricks.com/learn/free-edition) — Spark, Delta Lake, Unity Catalog, SQL Warehouse serverless.
 * **Engenharia Analítica:** [dbt Core](https://www.getdbt.com/) + `dbt-databricks`.
 * **Qualidade:** `pytest` (incluindo testes com Spark local) e 114 testes de dados do dbt.
-* **CI:** **GitHub Actions** — `ruff` (lint Python), `pytest` e `dbt parse` nos targets `dev` e `prod`.
+* **CI:** **GitHub Actions** — a cada push e pull request roda `ruff` (lint Python), `pytest` e `dbt parse` nos targets `dev` e `prod`. Ainda **não há CD** (deploy automático); a execução no Databricks é manual.
 * **Autenticação:** OAuth (`databricks auth login`) na CLI e no dbt de desenvolvimento — sem token fixo em arquivo.
 
 ## 🧭 Roadmap
 * **Orquestração:** `databricks/setup/setup_pipeline_olist.py` cria um Job (notebook Bronze → task dbt); falta executar e validar no Free Edition.
+* **CD:** deploy do Job e dos notebooks com **Databricks Asset Bundles** a partir do GitHub Actions, e `dbt build` no CI com um service principal.
 * **Governança no Unity Catalog:** grupos e `GRANT`s por camada, máscara de colunas sensíveis do CRM (e-mail, telefone), comentários e tags.
 * **Carga incremental:** Auto Loader na Bronze e modelos incrementais (`MERGE`) no dbt.
 * **Agente NL2SQL (planejado):** perguntas em linguagem natural traduzidas para SQL sobre a Gold, com Llama 3 via **Groq** e uma **camada de validação** (schema, qualidade do SQL, aprovação humana antes da execução). Hoje existem apenas as regras e a estrutura em `ml_ops/validation_layer/` — o agente ainda não foi implementado.
