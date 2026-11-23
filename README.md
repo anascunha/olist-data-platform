@@ -52,7 +52,7 @@ Rodado de ponta a ponta no **Databricks Free Edition** (serverless):
 
 ## 🧭 Roadmap
 * **Orquestração:** `databricks/setup/setup_pipeline_olist.py` cria um Job (notebook Bronze → task dbt); falta executar e validar no Free Edition.
-* **CD:** deploy do Job e dos notebooks com **Databricks Asset Bundles** a partir do GitHub Actions, e `dbt build` no CI com um service principal.
+* **CD:** deploy do Job e dos notebooks com **Declarative Automation Bundles** (antigo *Databricks Asset Bundles*) a partir do GitHub Actions, e `dbt build` no CI com um service principal.
 * **Governança no Unity Catalog:** grupos e `GRANT`s por camada, máscara de colunas sensíveis do CRM (e-mail, telefone), comentários e tags.
 * **Carga incremental:** Auto Loader na Bronze e modelos incrementais (`MERGE`) no dbt.
 * **Agente NL2SQL (planejado):** perguntas em linguagem natural traduzidas para SQL sobre a Gold, com Llama 3 via **Groq** e uma **camada de validação** (schema, qualidade do SQL, aprovação humana antes da execução). Hoje existem apenas as regras e a estrutura em `ml_ops/validation_layer/` — o agente ainda não foi implementado.
