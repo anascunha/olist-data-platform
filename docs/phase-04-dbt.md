@@ -94,13 +94,19 @@ No CI, o job `dbt Parse` roda `dbt deps` + `dbt parse` nos targets `dev` e `prod
 ## 🚀 Como Executar
 
 ```bash
+source .venv/bin/activate     # o dbt precisa ser o da .venv (com o adaptador dbt-databricks)
 cd transform
-cp .env.example .env          # preencha host, http_path e token do SQL Warehouse
+cp .env.example .env          # preencha host e http_path do SQL Warehouse
 set -a && source .env && set +a
 dbt deps --profiles-dir .
+dbt debug --profiles-dir .    # testa a conexão
 dbt build --profiles-dir .    # target dev → sandbox.dbt_<seu_nome>
 TARGET_ENV=prod dbt build --profiles-dir .   # producao.staging/trusted/marts
 ```
+
+**Autenticação:** o target `dev` usa **OAuth** (`auth_type: oauth`): na primeira execução o navegador abre para login, e nenhum token fica em arquivo. O target `prod` lê `DBT_DATABRICKS_TOKEN` do ambiente; em automação, o recomendado é um service principal.
+
+> ⚠️ Se aparecer `Error importing adapter: No module named 'dbt.adapters.databricks'` seguido de `'target' is undefined`, o `dbt` executado não é o da `.venv` — ative-a antes.
 
 ### Orquestração no Databricks
 `databricks/setup/setup_pipeline_olist.py` cria o Job **Pipeline_Olist_Bronze_dbt** com duas tasks: `Ingest_Bronze` (notebook) → `dbt_Build` (dbt task em SQL Warehouse, target `databricks_cluster` = produção).
@@ -109,7 +115,7 @@ TARGET_ENV=prod dbt build --profiles-dir .   # producao.staging/trusted/marts
 
 ## 📊 Resultado da Gold
 
-Execução completa com o dataset real do Olist e o CRM gerado com `--seed 42`: 18 modelos e 114 testes, todos passando.
+Execução no **Databricks Free Edition** (Serverless Starter Warehouse) com o dataset real do Olist e o CRM gerado com `--seed 42`: 18 modelos e 114 testes, todos passando (`PASS=132`, ~12 min).
 
 | Métrica | Valor |
 |---|---:|
@@ -118,7 +124,7 @@ Execução completa com o dataset real do Olist e o CRM gerado com `--seed 42`: 
 | Contatos que compram no marketplace | **14.854 (74,3%)** |
 | Recompradores | 1.164 (7,8% dos compradores) |
 | Receita dos contatos do CRM | R$ 2,57 mi |
-| Ticket médio | R$ 158,68 |
+| Ticket médio | R$ 158,63 |
 | Intervalo médio entre pedidos (recompradores) | 82,5 dias |
 | Receita gerada **após** a entrada no CRM | 77,7% |
 | Contatos que compram mas estão como lead/opportunity no CRM | **3.588** |
@@ -126,8 +132,8 @@ Execução completa com o dataset real do Olist e o CRM gerado com `--seed 42`: 
 | Segmento | Contatos | Pedidos/contato | Receita média | Ticket |
 |---|---:|---:|---:|---:|
 | `never_bought` | 5.146 | 0 | — | — |
-| `one_time_buyer` | 13.690 | 1,00 | R$ 161,12 | R$ 161,12 |
-| `repeat_buyer` | 1.164 | 2,13 | R$ 309,42 | R$ 145,16 |
+| `one_time_buyer` | 13.690 | 1,00 | R$ 161,08 | R$ 161,08 |
+| `repeat_buyer` | 1.164 | 2,13 | R$ 309,10 | R$ 145,08 |
 
 > ⚠️ As compras são dados reais do Olist, mas o CRM é fictício: distribuições como taxa de compra por `lead_source` ou por time refletem as regras do gerador (Fase 3), não comportamento real. O valor do projeto está no pipeline e na modelagem, que funcionariam igual com um CRM real.
 

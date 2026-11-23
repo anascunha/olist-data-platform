@@ -34,7 +34,7 @@ A ingestão tem duas etapas: **landing** (local → Volume) e **Bronze** (Volume
 
 1. **Extração automática (Kaggle CLI):** baixa o pacote `olistbr/brazilian-ecommerce` em `data/raw/`.
 2. **Unzip & preparação:** descompacta os 9 CSVs.
-3. **Governança ativa (AI Validation Layer):** apenas tabelas mapeadas em `allowed_tables` de [`ml_ops/validation_layer/rules.yaml`](../ml_ops/validation_layer/rules.yaml) seguem adiante. Tabelas desconhecidas são ignoradas.
+3. **Filtro de governança (lista de tabelas permitidas):** apenas tabelas mapeadas em `allowed_tables` de [`ml_ops/validation_layer/rules.yaml`](../ml_ops/validation_layer/rules.yaml) seguem adiante. Tabelas desconhecidas são ignoradas.
 4. **Upload para o Unity Catalog:** a Databricks CLI copia os arquivos aprovados para o Volume `/Volumes/raw/source_olist/landing/`.
 5. **Sanitização local:** o diretório temporário é removido.
 
