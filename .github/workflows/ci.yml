@@ -1,10 +1,20 @@
 name: CI
 
+# Mudanças só de documentação não disparam o CI.
+# Não usar "**.md": os .md em transform/models/ são doc blocks do dbt e afetam o dbt parse.
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - "README.md"
+      - "CLAUDE.md"
+      - "docs/**"
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - "README.md"
+      - "CLAUDE.md"
+      - "docs/**"
 
 jobs:
 
