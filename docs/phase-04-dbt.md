@@ -111,6 +111,12 @@ TARGET_ENV=prod dbt build --profiles-dir .   # producao.staging/trusted/marts
 ### Orquestração no Databricks
 `databricks/setup/setup_pipeline_olist.py` cria o Job **Pipeline_Olist_Bronze_dbt** com duas tasks: `Ingest_Bronze` (notebook) → `dbt_Build` (dbt task em SQL Warehouse, target `databricks_cluster` = produção).
 
+Validado no Free Edition: Bronze ~1 min, `dbt build` ~2 min, gerando as 13 views e 5 tabelas em `producao.staging/trusted/marts`.
+
+* Preencha os widgets `repo_path` (Git folder) e `warehouse_id` no topo do notebook; não altere os valores no código.
+* O Git folder **não sincroniza sozinho**: faça *Pull* da `main` antes de rodar o Job.
+* A task dbt roda em ambiente serverless (`environment_version`). A versão 1 (`"client": "1"`) não é mais aceita e falha com `Workspace doesn't support Client-1 channel`.
+
 ---
 
 ## 📊 Resultado da Gold

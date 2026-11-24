@@ -79,7 +79,7 @@ def build_job_payload(pipeline_name, repo_path, warehouse_id, schedule_cron):
         "environments": [
             {
                 "environment_key": "dbt_env",
-                "spec": {"client": "1", "dependencies": ["dbt-databricks>=1.10,<2.0"]},
+                "spec": {"environment_version": "4", "dependencies": ["dbt-databricks>=1.10,<2.0"]},
             }
         ],
         "max_concurrent_runs": 1,
