@@ -42,6 +42,7 @@ Rodado de ponta a ponta no **Databricks Free Edition** (serverless):
 | Bronze | 13 tabelas Delta gerenciadas — **1.550.922** linhas do Olist em ~1 min, contagens conferidas com a fonte |
 | Silver + Gold | `dbt build`: **13 views, 5 tabelas e 114 testes de dados — PASS=132** |
 | Deduplicação do CRM | 20.400 linhas na Bronze → 20.000 contatos na Silver |
+| Orquestração | Lakeflow Job `Pipeline_Olist_Bronze_dbt` (Bronze → task dbt em serverless) gravando em `producao.*` |
 
 ## 🛠️ Stack Tecnológica
 * **Processamento & Data Lake:** [Databricks Free Edition](https://www.databricks.com/learn/free-edition) — Spark, Delta Lake, Unity Catalog, SQL Warehouse serverless.
@@ -51,7 +52,7 @@ Rodado de ponta a ponta no **Databricks Free Edition** (serverless):
 * **Autenticação:** OAuth (`databricks auth login`) na CLI e no dbt de desenvolvimento — sem token fixo em arquivo.
 
 ## 🧭 Roadmap
-* **Orquestração:** `databricks/setup/setup_pipeline_olist.py` cria um Job (notebook Bronze → task dbt); falta executar e validar no Free Edition.
+* **Orquestração:** o Job já roda manualmente; falta agendar e rodar com um service principal em vez de usuário pessoal.
 * **CD:** deploy do Job e dos notebooks com **Declarative Automation Bundles** (antigo *Databricks Asset Bundles*) a partir do GitHub Actions, e `dbt build` no CI com um service principal.
 * **Governança no Unity Catalog:** grupos e `GRANT`s por camada, máscara de colunas sensíveis do CRM (e-mail, telefone), comentários e tags.
 * **Carga incremental:** Auto Loader na Bronze e modelos incrementais (`MERGE`) no dbt.
@@ -89,6 +90,8 @@ Fluxo completo no Databricks:
 2. `make ingest` e `make crm` — enviam os CSVs aos Volumes.
 3. Abrir o repositório como *Git folder* e rodar `databricks/ingestao_bronze.py` com `source = all`.
 4. `cd transform && dbt build --profiles-dir .` (ver [Fase 4](./docs/phase-04-dbt.md)).
+
+Ou tudo de uma vez em produção: rodar `databricks/setup/setup_pipeline_olist.py` (cria o Job) e **Run now** no Job `Pipeline_Olist_Bronze_dbt`.
 
 ## 📚 Documentação Técnica
 
