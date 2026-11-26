@@ -146,4 +146,4 @@ Execução no **Databricks Free Edition** (Serverless Starter Warehouse) com o d
 ---
 
 ## Próxima Fase
-→ Fase 5: Interface analítica (Streamlit + agente NL2SQL) consumindo `producao.marts` *(em breve)*
+→ [Fase 5: Governança no Unity Catalog](./phase-05-governance.md) — grupos, `GRANT`s, máscaras de PII, tags e linhagem
