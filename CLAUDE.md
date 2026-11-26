@@ -13,12 +13,9 @@ make lint           # ruff check .
 make test           # pytest
 ```
 
-### Running Streamlit UI
+### Streamlit UI (planned — no app yet)
 
-```bash
-docker-compose exec data_platform streamlit run <app_file>.py
-# Accessible at http://localhost:8501
-```
+`Dockerfile` / `docker-compose.yml` exist for a future analytics UI; there is no Streamlit app in the repo yet.
 
 ### Testing
 
@@ -89,33 +86,37 @@ LangChain + Llama 3 (via Groq API) translates natural language questions into Da
 - `pipelines/` — Data ingestion scripts (Kaggle download, CRM generator, Bronze logic, UC config)
 - `databricks/` — Databricks notebooks (source format) and UC setup SQL
 - `transform/` — dbt project (profile `olist`, targets `dev` → `sandbox.<schema>`, `prod`/`databricks_cluster` → `producao.staging|trusted|marts`)
-- `ml_ops/` — LangChain NL2SQL agent (not yet populated)
+- `ml_ops/` — governance rules (`validation_layer/rules.yaml`); NL2SQL agent not yet implemented
 
 ### Environment Variables
 
-Copy `.env.example` to `.env` and fill in:
+Root `.env` (copy `.env.example`):
 
 ```bash
 KAGGLE_USERNAME / KAGGLE_KEY      # Kaggle dataset download
-DATABRICKS_HOST / DATABRICKS_TOKEN / DATABRICKS_HTTP_PATH                # Databricks
-GROQ_API_KEY                      # Llama 3 via Groq
+GROQ_API_KEY                      # reserved for the planned NL2SQL agent (unused)
 ```
+
+Do **not** put `DATABRICKS_HOST` / `DATABRICKS_TOKEN` in the root `.env`: scripts call `load_dotenv()` and env vars take precedence over the CLI profile. Databricks auth is OAuth via `databricks auth login` (CLI profile).
+
+`transform/.env` (copy `transform/.env.example`): `DBT_DATABRICKS_HOST`, `DBT_DATABRICKS_HTTP_PATH`, `DBT_DATABRICKS_CATALOG`, `DBT_DATABRICKS_SCHEMA`, `TARGET_ENV`. The `dev` target uses OAuth; `DBT_DATABRICKS_TOKEN` is only for `prod`.
 
 ## Tech Stack
 
 - **Python 3.11**, PySpark, Delta Lake
 - **dbt Core** + `dbt-databricks` adapter
-- **LangChain** + `langchain-groq` (Llama 3)
-- **Streamlit** (analytics UI, port 8501)
 - **Ruff** (linting), **pytest** + **pytest-mock** (tests)
-- **Docker** / **Docker Compose** for local dev
+- **Databricks** Lakeflow Jobs (orchestration), Unity Catalog (grants, column masks, tags)
+- Planned: **LangChain** + `langchain-groq` (Llama 3), **Streamlit** UI, Docker for local dev
 
 ## Development Phases
 
 The project is being built incrementally:
 1. Infrastructure setup and documentation *(done)*
-2. Data ingestion pipeline (Kaggle -> UC Volume -> Bronze Delta)
-   - Phase 3: fictional CRM generator (`pipelines/generate_crm.py`, `make crm`) linked to Olist by `customer_unique_id`, landed in `raw.source_crm`
+2. Data ingestion pipeline (Kaggle -> UC Volume -> Bronze Delta) *(done, validated on Databricks Free Edition)*
+   - Phase 3: fictional CRM generator (`pipelines/generate_crm.py`, `make crm`) linked to Olist by `customer_unique_id`, landed in `raw.source_crm` *(done)*
 3. Unit tests (pytest) *(done — `tests/pipelines/`)*
-4. dbt Silver/Gold models + data tests (`docs/phase-04-dbt.md`)
-5. Streamlit analytics UI
+4. dbt Silver/Gold models + data tests (`docs/phase-04-dbt.md`) *(done — PASS=132)*
+   - Orchestration: Lakeflow Job `Pipeline_Olist_Bronze_dbt` *(validated, run manually)*
+   - UC governance (groups, grants, column masks, PII tags) *(applied via UI; governance-as-code is next)*
+5. Streamlit analytics UI + NL2SQL agent *(planned)*

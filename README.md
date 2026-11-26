@@ -42,7 +42,10 @@ Rodado de ponta a ponta no **Databricks Free Edition** (serverless):
 | Bronze | 13 tabelas Delta gerenciadas — **1.550.922** linhas do Olist em ~1 min, contagens conferidas com a fonte |
 | Silver + Gold | `dbt build`: **13 views, 5 tabelas e 114 testes de dados — PASS=132** |
 | Deduplicação do CRM | 20.400 linhas na Bronze → 20.000 contatos na Silver |
-| Orquestração | Lakeflow Job `Pipeline_Olist_Bronze_dbt` (Bronze → task dbt em serverless) gravando em `producao.*` |
+| Orquestração | Lakeflow Job `Pipeline_Olist_Bronze_dbt` (Bronze → task dbt em serverless), executado manualmente, gravando em `producao.*` — a Gold de produção bate com a de dev |
+| Governança (Unity Catalog) | Grupos de conta `analistas` e `leitores_pii`; `analistas` leem só `producao.marts`; máscaras em `email` e `phone_e164` da `dim_crm_contact` (só `leitores_pii` vê completo); tags `pii` nas colunas pessoais da Bronze do CRM — aplicados pelo painel do Databricks |
+
+> **Validação com gabarito:** como o CRM é gerado, as respostas são conhecidas — 75% dos contatos ligados ao Olist, 2% de duplicatas, parte dos compradores marcada como lead. O pipeline reencontra esses valores (74,3% compradores; 20.400 → 20.000; 3.588 estágios desatualizados), o que valida a lógica de ligação, deduplicação e regras de negócio.
 
 ## 🛠️ Stack Tecnológica
 * **Processamento & Data Lake:** [Databricks Free Edition](https://www.databricks.com/learn/free-edition) — Spark, Delta Lake, Unity Catalog, SQL Warehouse serverless.
@@ -51,11 +54,12 @@ Rodado de ponta a ponta no **Databricks Free Edition** (serverless):
 * **CI:** **GitHub Actions** — a cada push e pull request roda `ruff` (lint Python), `pytest` e `dbt parse` nos targets `dev` e `prod`. Ainda **não há CD** (deploy automático); a execução no Databricks é manual.
 * **Autenticação:** OAuth (`databricks auth login`) na CLI e no dbt de desenvolvimento — sem token fixo em arquivo.
 
-## 🧭 Roadmap
-* **Orquestração:** o Job já roda manualmente; falta agendar e rodar com um service principal em vez de usuário pessoal.
+## 🧭 Próximos passos (melhorias)
+* **Identidade do Job:** rodar com um **service principal** (OAuth M2M) em vez de usuário pessoal, e agendar conforme a necessidade de atualização do negócio.
+* **Governança como código:** declarar máscaras (`column_mask` do `dbt-databricks`), `GRANT`s e tags no repositório, em vez de aplicá-los pelo painel — e evitar que a ingestão sobrescreva os comentários da Bronze. Próximo nível: política **ABAC** por tag (`pii`), para tabelas novas já nascerem protegidas.
 * **CD:** deploy do Job e dos notebooks com **Declarative Automation Bundles** (antigo *Databricks Asset Bundles*) a partir do GitHub Actions, e `dbt build` no CI com um service principal.
-* **Governança no Unity Catalog:** grupos e `GRANT`s por camada, máscara de colunas sensíveis do CRM (e-mail, telefone), comentários e tags.
-* **Carga incremental:** Auto Loader na Bronze e modelos incrementais (`MERGE`) no dbt.
+* **Carga incremental:** Auto Loader na Bronze e modelos incrementais (`MERGE`) no dbt, no lugar do overwrite completo.
+* **Filtro de governança fail-closed:** hoje, se a lista de tabelas permitidas vier vazia, tudo passa; o correto é bloquear.
 * **Agente NL2SQL (planejado):** perguntas em linguagem natural traduzidas para SQL sobre a Gold, com Llama 3 via **Groq** e uma **camada de validação** (schema, qualidade do SQL, aprovação humana antes da execução). Hoje existem apenas as regras e a estrutura em `ml_ops/validation_layer/` — o agente ainda não foi implementado.
 
 ## 🗂️ Estrutura do Repositório
