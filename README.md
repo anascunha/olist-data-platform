@@ -43,7 +43,7 @@ Rodado de ponta a ponta no **Databricks Free Edition** (serverless):
 | Silver + Gold | `dbt build`: **13 views, 5 tabelas e 114 testes de dados — PASS=132** |
 | Deduplicação do CRM | 20.400 linhas na Bronze → 20.000 contatos na Silver |
 | Orquestração | Lakeflow Job `Pipeline_Olist_Bronze_dbt` (Bronze → task dbt em serverless), executado manualmente, gravando em `producao.*` — a Gold de produção bate com a de dev |
-| Governança (Unity Catalog) | Grupos de conta `analistas` e `leitores_pii`; `analistas` leem só `producao.marts`; máscaras em `email` e `phone_e164` da `dim_crm_contact` (só `leitores_pii` vê completo); tags `pii` nas colunas pessoais da Bronze do CRM — aplicados pelo painel do Databricks |
+| Governança (Unity Catalog) | Grupos de conta `analistas` e `leitores_pii`; `analistas` leem só `producao.marts`; máscaras em `email` e `phone_e164` da `dim_crm_contact` (só `leitores_pii` vê completo); tags `pii` nas colunas pessoais da Bronze do CRM — aplicados pelo painel do Databricks ([Fase 5](./docs/phase-05-governance.md)) |
 
 > **Validação com gabarito:** como o CRM é gerado, as respostas são conhecidas — 75% dos contatos ligados ao Olist, 2% de duplicatas, parte dos compradores marcada como lead. O pipeline reencontra esses valores (74,3% compradores; 20.400 → 20.000; 3.588 estágios desatualizados), o que valida a lógica de ligação, deduplicação e regras de negócio.
 
@@ -103,3 +103,4 @@ Ou tudo de uma vez em produção: rodar `databricks/setup/setup_pipeline_olist.p
 * 📖 [Fase 2 — Pipeline de Ingestão (Bronze)](./docs/phase-02-ingestion.md)
 * 📖 [Fase 3 — CRM Fictício ligado ao Olist](./docs/phase-03-crm.md)
 * 📖 [Fase 4 — Transformação com dbt (Silver e Gold)](./docs/phase-04-dbt.md)
+* 📖 [Fase 5 — Governança no Unity Catalog](./docs/phase-05-governance.md)
